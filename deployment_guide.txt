@@ -1,0 +1,39 @@
+cd ~/projects/btp-cf-monitor
+
+# ---------- Step 1: Download Terraform + jq binaries ----------
+mkdir -p bin
+
+# Download Terraform (linux amd64)
+wget -q https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+unzip -o terraform_1.7.5_linux_amd64.zip -d bin/
+rm terraform_1.7.5_linux_amd64.zip
+
+# Download jq
+wget -q https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64 -O bin/jq
+chmod +x bin/jq bin/terraform
+
+# Verify
+bin/terraform --version
+bin/jq --version
+
+# ---------- Step 2: Login to CF ----------
+cf login -a your_subaccount_domain --sso
+
+# Target your space
+cf target -o YOUR_ORG -s YOUR_SPACE
+
+# ---------- Step 3: Push the app ----------
+cf push
+
+# ---------- Step 4: Set credentials via env vars (secure) ----------
+cf set-env btp-quota-monitor BTP_USERNAME "your-username"
+cf set-env btp-quota-monitor BTP_PASSWORD "your-password"
+cf set-env btp-quota-monitor ANS_CLIENT_ID 'client-id'
+cf set-env btp-quota-monitor ANS_CLIENT_SECRET 'client-secret'
+cf set-env btp-quota-monitor REPORT_EMAIL "mail-id"
+
+# ---------- Step 5: Restart to pick up env vars ----------
+cf restart btp-quota-monitor
+
+# ---------- Step 6: Check logs ----------
+cf logs btp-quota-monitor --recent

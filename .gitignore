@@ -1,0 +1,17 @@
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+scripts/subaccounts.json
+scripts/ans-config.json
+logs/
+*.pid
+*.log
+reports/
+
+# Manifest with credentials
+manifest.yml
+
+# Downloaded binaries
+bin/

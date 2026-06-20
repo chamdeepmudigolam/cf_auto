@@ -1,0 +1,12 @@
+[
+  {
+    "id": "your-subaccount-guid-1",
+    "name": "SubaccountName1",
+    "region": "us10"
+  },
+  {
+    "id": "your-subaccount-guid-2",
+    "name": "SubaccountName2",
+    "region": "eu20"
+  }
+]

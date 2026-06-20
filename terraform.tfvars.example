@@ -1,0 +1,33 @@
+##############################################################################
+# terraform.tfvars  — NEVER commit this file to Git
+##############################################################################
+
+global_account_subdomain = "your-global-account-subdomain"
+
+btp_username = "your-email@example.com"
+btp_password = "your-password"
+
+notification_email = "your-email@example.com"
+
+# CF API endpoint (default — script auto-detects per region)
+cf_api_endpoint = "https://api.cf.us10.hana.ondemand.com"
+
+# Report every 7 days
+report_interval_days = 7
+
+# ---------- ANS Credentials ----------
+# Get these from your existing ANS service key:
+#
+#   cf service-key alert-notification YOUR_KEY_NAME
+#
+# Then copy the values from the JSON output:
+#
+#   ans_client_id     = from "uaa.clientid"
+#   ans_client_secret = from "uaa.clientsecret"
+#   ans_uaa_url       = from "uaa.url"
+#   ans_api_url       = from "url"
+
+ans_client_id     = "your-ans-client-id"
+ans_client_secret = "your-ans-client-secret"
+ans_uaa_url       = "https://your-tenant.authentication.region.hana.ondemand.com"
+ans_api_url       = "https://clm-sl-ans-live-ans-service-api.cfapps.region.hana.ondemand.com"

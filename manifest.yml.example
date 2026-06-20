@@ -1,0 +1,21 @@
+---
+applications:
+  - name: btp-quota-monitor
+    memory: 256M
+    disk_quota: 512M
+    instances: 1
+    buildpack: binary_buildpack
+    command: bash start.sh
+    no-route: true
+    health-check-type: process
+    env:
+      BTP_USERNAME: "your-email@example.com"
+      BTP_PASSWORD: "your-password"
+      ANS_CLIENT_ID: "your-ans-client-id"
+      ANS_CLIENT_SECRET: "your-ans-client-secret"
+      ANS_UAA_URL: "https://your-tenant.authentication.region.hana.ondemand.com"
+      ANS_API_URL: "https://clm-sl-ans-live-ans-service-api.cfapps.region.hana.ondemand.com"
+      REPORT_EMAIL: "your-email@example.com"
+      INTERVAL_DAYS: "7"
+      CF_API_ENDPOINT: "https://api.cf.region.hana.ondemand.com"
+      GLOBAL_ACCOUNT_SUBDOMAIN: "your-global-account-subdomain"
