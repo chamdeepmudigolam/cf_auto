@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BTP CF Quota Monitor</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="300">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; }
+        .header { background: linear-gradient(135deg, #0070AD, #004F7C); color: #fff; padding: 24px 32px; }
+        .header h1 { font-size: 22px; font-weight: 600; }
+        .header p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+        .stats { display: flex; background: #fff; padding: 16px 32px; border-bottom: 1px solid #e0e0e0; gap: 24px; flex-wrap: wrap; }
+        .stat { text-align: center; flex: 1; min-width: 100px; }
+        .stat-num { font-size: 32px; font-weight: 700; color: #0070AD; }
+        .stat-num.warn { color: #C62828; }
+        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .content { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+        .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+        .card-title { padding: 14px 20px; font-weight: 600; font-size: 14px; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .warn-banner { background: #FFF3E0; border-left: 4px solid #E65100; padding: 12px 20px; color: #E65100; font-size: 13px; margin-bottom: 20px; border-radius: 4px; }
+        .warn-banner strong { display: block; margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0070AD; color: #fff; padding: 10px 14px; font-size: 12px; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        tr:nth-child(even) { background: #fafafa; }
+        tr:hover { background: #f0f7fb; }
+        .low { color: #C62828; font-weight: 700; }
+        .ok { color: #2E7D32; }
+        .unlim { color: #1565C0; font-style: italic; }
+        .pct-bar { display: inline-block; height: 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+        .schedule { display: flex; gap: 16px; padding: 16px 20px; flex-wrap: wrap; }
+        .sched-item { flex: 1; min-width: 150px; padding: 12px 16px; border-radius: 6px; text-align: center; }
+        .sched-item.start { background: #E8F5E9; color: #2E7D32; }
+        .sched-item.report { background: #E3F2FD; color: #1565C0; }
+        .sched-item.stop { background: #F3E5F5; color: #6C3483; }
+        .sched-time { font-size: 24px; font-weight: 700; }
+        .sched-label { font-size: 11px; text-transform: uppercase; margin-top: 4px; }
+        .sub-list { padding: 8px 20px 14px; font-size: 12px; color: #0070AD; }
+        .org-meta { font-size: 12px; color: #888; padding: 4px 20px 8px; }
+        .no-data { padding: 40px; text-align: center; color: #999; font-size: 16px; }
+        .footer { text-align: center; padding: 20px; font-size: 11px; color: #999; }
+        .status-row { display: flex; gap: 12px; padding: 12px 20px; font-size: 12px; color: #666; flex-wrap: wrap; }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .status-badge.running { background: #E8F5E9; color: #2E7D32; }
+        .status-badge.stopped { background: #FFEBEE; color: #C62828; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SAP BTP Cloud Foundry — Quota Monitor</h1>
+        <p>Last updated: {{ now }} | Report: {{ report_file or 'No report yet' }} | Auto-refresh: 5 min</p>
+    </div>
+
+    {% if report %}
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-num">{{ report.total_subaccounts }}</div>
+            <div class="stat-label">Subaccounts</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num">{{ orgs|length }}</div>
+            <div class="stat-label">Unique Orgs</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num {{ 'warn' if warnings }}">{{ warnings|length }}</div>
+            <div class="stat-label">Warnings</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num" style="color: {% if app_status.apps_running == 'yes' %}#2E7D32{% else %}#E65100{% endif %}">
+                {{ app_status.apps_running|default('unknown') }}
+            </div>
+            <div class="stat-label">Apps Status</div>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Schedule -->
+        <div class="card">
+            <div class="card-title">Daily Schedule (UTC)</div>
+            <div class="schedule">
+                <div class="sched-item start">
+                    <div class="sched-time">{{ "%02d:00"|format(schedule.start_hour) }}</div>
+                    <div class="sched-label">Start All Apps</div>
+                </div>
+                <div class="sched-item report">
+                    <div class="sched-time">{{ "%02d:00"|format(schedule.report_hour) }}</div>
+                    <div class="sched-label">Daily Report + Email</div>
+                </div>
+                <div class="sched-item stop">
+                    <div class="sched-time">{{ "%02d:00"|format(schedule.stop_hour) }}</div>
+                    <div class="sched-label">Stop Non-Prod Apps</div>
+                </div>
+            </div>
+            <div class="status-row">
+                <span>Last start: {{ app_status.last_start|default('N/A') }}</span>
+                <span>|</span>
+                <span>Last stop: {{ app_status.last_stop|default('N/A') }}</span>
+            </div>
+        </div>
+
+        <!-- Warnings -->
+        {% if warnings %}
+        <div class="warn-banner">
+            <strong>⚠ Resources Running Low</strong>
+            {% for w in warnings %}
+                {{ w }}<br>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Org Quota Cards -->
+        {% for guid, data in orgs.items() %}
+        {% set org = data.org %}
+        {% set subs = data.subs|unique|sort|list %}
+        <div class="card">
+            <div class="card-title">{{ org.org_name }}</div>
+            <div class="org-meta">Region: {{ data.region }} | {{ subs|length }} subaccount(s)</div>
+            <div class="sub-list">{{ subs[:5]|join(', ') }}{% if subs|length > 5 %}, +{{ subs|length - 5 }} more{% endif %}</div>
+            <table>
+                <tr>
+                    <th>Resource</th>
+                    <th style="text-align:right">Used</th>
+                    <th style="text-align:right">Total</th>
+                    <th style="text-align:right">Remaining</th>
+                    <th style="text-align:right">Usage</th>
+                </tr>
+                {% set resources = [
+                    ('Memory (MB)', org.memory.total_mb, org.memory.used_mb, org.memory.remaining_mb, 1024),
+                    ('Service Instances', org.service_instances.total, org.service_instances.used, org.service_instances.remaining, 50),
+                    ('Routes', org.routes.total, org.routes.used, org.routes.remaining, 20)
+                ] %}
+                {% for label, total, used, rem, low_t in resources %}
+                <tr>
+                    <td>{{ label }}</td>
+                    {% if rem == -1 %}
+                    <td style="text-align:right">{{ "{:,}".format(used) }}</td>
+                    <td style="text-align:right" class="unlim">Unlimited</td>
+                    <td style="text-align:right" class="unlim">Unlimited</td>
+                    <td style="text-align:right" class="unlim">—</td>
+                    {% else %}
+                    {% set pct = (used * 100 // total) if total > 0 else 0 %}
+                    {% set is_low = rem < low_t %}
+                    <td style="text-align:right">{{ "{:,}".format(used) }}</td>
+                    <td style="text-align:right">{{ "{:,}".format(total) }}</td>
+                    <td style="text-align:right" class="{{ 'low' if is_low else 'ok' }}">
+                        {{ "{:,}".format(rem) }}{% if is_low %} ⚠{% endif %}
+                    </td>
+                    <td style="text-align:right">
+                        {{ pct }}%
+                        <span class="pct-bar" style="width:{{ [pct, 60]|min }}px;background:{% if pct > 80 %}#C62828{% elif pct > 60 %}#FFB74D{% else %}#2E7D32{% endif %}"></span>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+
+        <!-- No CF Subaccounts -->
+        {% if no_cf %}
+        <div class="card">
+            <div class="card-title">Subaccounts Without CF Environment ({{ no_cf|length }})</div>
+            <div style="padding: 12px 20px; font-size: 13px; color: #999;">
+                {% for sa in no_cf %}
+                    {{ sa.subaccount_name }} ({{ sa.region }})<br>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% else %}
+    <div class="content">
+        <div class="no-data">
+            <p>No report data available yet.</p>
+            <p style="margin-top:8px; font-size:13px;">The first report will be generated at {{ "%02d:00 UTC"|format(schedule.report_hour) }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        BTP CF Quota Monitor | Terraform + SAP Alert Notification Service | Auto-refreshes every 5 minutes
+    </div>
+</body>
+</html>
