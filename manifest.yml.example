@@ -19,3 +19,7 @@ applications:
       INTERVAL_DAYS: "7"
       CF_API_ENDPOINT: "https://api.cf.region.hana.ondemand.com"
       GLOBAL_ACCOUNT_SUBDOMAIN: "your-global-account-subdomain"
+      STOP_APPS_HOUR: "22"
+      START_APPS_HOUR: "7"
+      REPORT_HOUR: "8"
+      NON_PROD_SPACES: "dev,staging,test,qa,uat,demo,sandbox"
