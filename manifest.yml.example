@@ -4,10 +4,10 @@ applications:
     memory: 256M
     disk_quota: 512M
     instances: 1
-    buildpack: binary_buildpack
+    buildpack: python_buildpack
     command: bash start.sh
-    no-route: true
-    health-check-type: process
+    health-check-type: http
+    health-check-http-endpoint: /health
     env:
       BTP_USERNAME: "your-email@example.com"
       BTP_PASSWORD: "your-password"
@@ -16,7 +16,7 @@ applications:
       ANS_UAA_URL: "https://your-tenant.authentication.region.hana.ondemand.com"
       ANS_API_URL: "https://clm-sl-ans-live-ans-service-api.cfapps.region.hana.ondemand.com"
       REPORT_EMAIL: "your-email@example.com"
-      INTERVAL_DAYS: "7"
+      INTERVAL_DAYS: "1"
       CF_API_ENDPOINT: "https://api.cf.region.hana.ondemand.com"
       GLOBAL_ACCOUNT_SUBDOMAIN: "your-global-account-subdomain"
       STOP_APPS_HOUR: "22"
